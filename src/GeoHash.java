@@ -1,23 +1,25 @@
 
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
 
 /**
- * @Description: GeoHash 实现
- * @Author: 林辉煌 huihuang.lin@luckincoffee.com
- * @Date: 2019.5.18 22:19
+ * GeoHash 实现
+ * todo：这个代码只能用演示geohash的逻辑，全程用字符串处理，性能太差了，可以改成用位运算
+ *
+ * @author patricklin
  */
 public class GeoHash {
 
     /**
      * 经度最小值
      */
-    private static final double MIN_LONGTITUDE = -180.0;
+    private static final double MIN_LONGITUDE = -180.0;
 
     /**
      * 经度最大值
      */
-    private static final double MAX_LONGTITUDE = 180.0;
+    private static final double MAX_LONGITUDE = 180.0;
 
     /**
      * 纬度最小值
@@ -53,7 +55,7 @@ public class GeoHash {
     /**
      * base32 反编码对照表
      */
-    private final static Map<Character, Integer> BASE32_DECODE_LOOKUP = new HashMap<>();
+    private static final Map<Character, Integer> BASE32_DECODE_LOOKUP = new HashMap<>();
 
     /**
      * 编码 0 填充对照表
@@ -64,60 +66,59 @@ public class GeoHash {
      * 方向枚举
      */
     private enum Direction {
-        Top,
-        Right,
-        Bottom,
-        Left;
+        TOP,
+        RIGHT,
+        BOTTOM,
+        LEFT;
     }
 
     /**
      * 奇数查表
      */
-    private static Map<Direction, String> ODD_LOOKUP = new HashMap<>(4);
+    private static final EnumMap<Direction, String> ODD_LOOKUP = new EnumMap<>(Direction.class);
 
     /**
      * 偶数查表
      */
-    private static Map<Direction, String> EVEN_LOOKUP = new HashMap<>(4);
+    private static final EnumMap<Direction, String> EVEN_LOOKUP = new EnumMap<>(Direction.class);
 
     /**
      * 奇数查表边界
      */
-    private static Map<Direction, String> ODD_BORDERS = new HashMap<>(4);
+    private static final EnumMap<Direction, String> ODD_BORDERS = new EnumMap<>(Direction.class);
 
     /**
      * 偶数查表边界
      */
-    private static Map<Direction, String> EVEN_BORDERS = new HashMap<>(4);
+    private static final EnumMap<Direction, String> EVEN_BORDERS = new EnumMap<>(Direction.class);
 
     /**
      * 64bit中第一位的标记
      */
     private static final long FIRST_BIT_FLAGGED = 0x8000000000000000L;
 
-    /**
-     * 静态块
-     */
+
+    // 静态块
     static {
         for (int i = 0; i < BASE32_LOOKUP.length; i++) {
             BASE32_DECODE_LOOKUP.put(BASE32_LOOKUP[i], i);
         }
-        ODD_LOOKUP.put(Direction.Top, "238967debc01fg45kmstqrwxuvhjyznp");
-        ODD_LOOKUP.put(Direction.Right, "14365h7k9dcfesgujnmqp0r2twvyx8zb");
-        ODD_LOOKUP.put(Direction.Bottom, "bc01fg45238967deuvhjyznpkmstqrwx");
-        ODD_LOOKUP.put(Direction.Left, "p0r21436x8zb9dcf5h7kjnmqesgutwvy");
-        EVEN_LOOKUP.put(Direction.Top, "14365h7k9dcfesgujnmqp0r2twvyx8zb");
-        EVEN_LOOKUP.put(Direction.Right, "238967debc01fg45kmstqrwxuvhjyznp");
-        EVEN_LOOKUP.put(Direction.Bottom, "p0r21436x8zb9dcf5h7kjnmqesgutwvy");
-        EVEN_LOOKUP.put(Direction.Left, "bc01fg45238967deuvhjyznpkmstqrwx");
-        ODD_BORDERS.put(Direction.Top, "bcfguvyz");
-        ODD_BORDERS.put(Direction.Right, "prxz");
-        ODD_BORDERS.put(Direction.Bottom, "0145hjnp");
-        ODD_BORDERS.put(Direction.Left, "028b");
-        EVEN_BORDERS.put(Direction.Top, "prxz");
-        EVEN_BORDERS.put(Direction.Right, "bcfguvyz");
-        EVEN_BORDERS.put(Direction.Bottom, "028b");
-        EVEN_BORDERS.put(Direction.Left, "0145hjnp");
+        ODD_LOOKUP.put(Direction.TOP, "238967debc01fg45kmstqrwxuvhjyznp");
+        ODD_LOOKUP.put(Direction.RIGHT, "14365h7k9dcfesgujnmqp0r2twvyx8zb");
+        ODD_LOOKUP.put(Direction.BOTTOM, "bc01fg45238967deuvhjyznpkmstqrwx");
+        ODD_LOOKUP.put(Direction.LEFT, "p0r21436x8zb9dcf5h7kjnmqesgutwvy");
+        EVEN_LOOKUP.put(Direction.TOP, "14365h7k9dcfesgujnmqp0r2twvyx8zb");
+        EVEN_LOOKUP.put(Direction.RIGHT, "238967debc01fg45kmstqrwxuvhjyznp");
+        EVEN_LOOKUP.put(Direction.BOTTOM, "p0r21436x8zb9dcf5h7kjnmqesgutwvy");
+        EVEN_LOOKUP.put(Direction.LEFT, "bc01fg45238967deuvhjyznpkmstqrwx");
+        ODD_BORDERS.put(Direction.TOP, "bcfguvyz");
+        ODD_BORDERS.put(Direction.RIGHT, "prxz");
+        ODD_BORDERS.put(Direction.BOTTOM, "0145hjnp");
+        ODD_BORDERS.put(Direction.LEFT, "028b");
+        EVEN_BORDERS.put(Direction.TOP, "prxz");
+        EVEN_BORDERS.put(Direction.RIGHT, "bcfguvyz");
+        EVEN_BORDERS.put(Direction.BOTTOM, "028b");
+        EVEN_BORDERS.put(Direction.LEFT, "0145hjnp");
     }
 
     /**
@@ -129,8 +130,8 @@ public class GeoHash {
      * @return 二进制编码
      */
     public static String getBinary(double lon, double lat, int precision) {
-        if (lon <= MIN_LONGTITUDE || lon >= MAX_LONGTITUDE) {
-            throw new IllegalArgumentException(String.format("经度取值范围为(%f, %f)", MIN_LONGTITUDE, MAX_LONGTITUDE));
+        if (lon <= MIN_LONGITUDE || lon >= MAX_LONGITUDE) {
+            throw new IllegalArgumentException(String.format("经度取值范围为(%f, %f)", MIN_LONGITUDE, MAX_LONGITUDE));
         }
         if (lat <= MIN_LATITUDE || lat >= MAX_LATITUDE) {
             throw new IllegalArgumentException(String.format("纬度取值范围为(%f, %f)", MIN_LATITUDE, MAX_LATITUDE));
@@ -141,21 +142,18 @@ public class GeoHash {
 
         // 经纬标识符，0代表经度，1代表纬度
         int xyFlag = 0;
-        int bits = 1;
+        // 二进制位数
         int binaryBits = precision << 1;
-        double[] lon_range = {MIN_LONGTITUDE, MAX_LONGTITUDE};
-        double[] lat_range = {MIN_LATITUDE, MAX_LATITUDE};
+        double[] lonRange = {MIN_LONGITUDE, MAX_LONGITUDE};
+        double[] latRange = {MIN_LATITUDE, MAX_LATITUDE};
         StringBuilder result = new StringBuilder();
-        while (bits <= binaryBits) {
-            char divideResult;
+        for (int i = 0; i < binaryBits; i++) {
             if (xyFlag == 0) {
-                divideResult = divideConquer(lon_range, lon);
+                result.append(divideConquer(lonRange, lon));
             } else {
-                divideResult = divideConquer(lat_range, lat);
+                result.append(divideConquer(latRange, lat));
             }
-            result.append(divideResult);
-            bits++;
-            xyFlag = xyFlag ^ 0x1;
+            xyFlag ^= 1;
         }
         return result.toString();
     }
@@ -169,7 +167,7 @@ public class GeoHash {
      * @return base32编码
      */
     public static String getBase32(final String binary) {
-        valideBinary(binary);
+        validateBinary(binary);
         StringBuilder result = new StringBuilder();
         for (int i = 0; i < binary.length(); i += ENCODE_EVERY_BITS) {
             int delta = Math.min(ENCODE_EVERY_BITS, binary.length() - i);
@@ -188,7 +186,7 @@ public class GeoHash {
      * @return 二进制编码
      */
     public static String getBinary(final String base32, int bits) {
-        valideBase32(base32);
+        validateBase32(base32);
         int[] region = {(base32.length() - 1) * ENCODE_EVERY_BITS, base32.length() * ENCODE_EVERY_BITS};
         if (bits <= region[0] || bits > region[1]) {
             throw new IllegalArgumentException(String.format("精度与base32编码不匹配，长度为%d的base32编码，其二进制长度应为(%d, %d]", base32.length(), region[0], region[1]));
@@ -216,17 +214,17 @@ public class GeoHash {
      * @return base32编码的数组
      */
     public static String[] getNeighborsByTable(final String base32) {
-        valideBase32(base32);
+        validateBase32(base32);
         String[] result = new String[9];
         result[4] = base32;
-        result[1] = getNeighborWithDirectionByTable(base32, Direction.Top);
-        result[0] = getNeighborWithDirectionByTable(result[1], Direction.Left);
-        result[2] = getNeighborWithDirectionByTable(result[1], Direction.Right);
-        result[5] = getNeighborWithDirectionByTable(base32, Direction.Right);
-        result[7] = getNeighborWithDirectionByTable(base32, Direction.Bottom);
-        result[3] = getNeighborWithDirectionByTable(base32, Direction.Left);
-        result[6] = getNeighborWithDirectionByTable(result[7], Direction.Left);
-        result[8] = getNeighborWithDirectionByTable(result[7], Direction.Right);
+        result[1] = getNeighborWithDirectionByTable(base32, Direction.TOP);
+        result[0] = getNeighborWithDirectionByTable(result[1], Direction.LEFT);
+        result[2] = getNeighborWithDirectionByTable(result[1], Direction.RIGHT);
+        result[5] = getNeighborWithDirectionByTable(base32, Direction.RIGHT);
+        result[7] = getNeighborWithDirectionByTable(base32, Direction.BOTTOM);
+        result[3] = getNeighborWithDirectionByTable(base32, Direction.LEFT);
+        result[6] = getNeighborWithDirectionByTable(result[7], Direction.LEFT);
+        result[8] = getNeighborWithDirectionByTable(result[7], Direction.RIGHT);
         return result;
     }
 
@@ -238,10 +236,11 @@ public class GeoHash {
      * @return 相应方向相邻的base32编码
      */
     public static String getNeighborWithDirectionByTable(final String base32, Direction dire) {
-        valideBase32(base32);
-        boolean isOdd = (base32.length() & 0x1) == 0x1;
-        String prefix = base32.substring(0, base32.length() - 1);
-        char lastChar = base32.charAt(base32.length() - 1);
+        validateBase32(base32);
+        int n = base32.length();
+        boolean isOdd = (n & 0x1) == 0x1;
+        String prefix = base32.substring(0, n - 1);
+        char lastChar = base32.charAt(n - 1);
         // 是否处于边界
         boolean inBorder;
         char postfix;
@@ -256,8 +255,7 @@ public class GeoHash {
         if (inBorder) {
             prefix = getNeighborWithDirectionByTable(prefix, dire);
         }
-        String result = prefix + postfix;
-        return result;
+        return prefix + postfix;
     }
 
     /**
@@ -272,31 +270,32 @@ public class GeoHash {
             throw new IllegalArgumentException("二进制编码长度至少为2");
         }
         String result = binary;
-        String lat, lon;
+        String lat;
+        String lon;
         int decimal;
         switch (dire) {
-            case Top:
+            case TOP:
                 lat = extractEveryTwoBit(binary, 1);
                 decimal = Integer.parseInt(lat, 2);
                 decimal += 1;
                 lat = maskLastNBit(decimal, lat.length());
                 result = integrateEveryTwoBit(result, 1, lat);
                 break;
-            case Right:
+            case RIGHT:
                 lon = extractEveryTwoBit(binary, 0);
                 decimal = Integer.parseInt(lon, 2);
                 decimal += 1;
                 lon = maskLastNBit(decimal, lon.length());
                 result = integrateEveryTwoBit(result, 0, lon);
                 break;
-            case Bottom:
+            case BOTTOM:
                 lat = extractEveryTwoBit(binary, 1);
                 decimal = Integer.parseInt(lat, 2);
                 decimal -= 1;
                 lat = maskLastNBit(decimal, lat.length());
                 result = integrateEveryTwoBit(result, 1, lat);
                 break;
-            case Left:
+            case LEFT:
                 lon = extractEveryTwoBit(binary, 0);
                 decimal = Integer.parseInt(lon, 2);
                 decimal -= 1;
@@ -317,17 +316,17 @@ public class GeoHash {
      * @return 相应方向相邻的二进制编码
      */
     public static String[] getNeighbors(final String binary) {
-        valideBinary(binary);
+        validateBinary(binary);
         String[] result = new String[9];
         result[4] = binary;
-        result[1] = getNeighborWithDirection(binary, Direction.Top);
-        result[0] = getNeighborWithDirection(result[1], Direction.Left);
-        result[2] = getNeighborWithDirection(result[1], Direction.Right);
-        result[5] = getNeighborWithDirection(binary, Direction.Right);
-        result[7] = getNeighborWithDirection(binary, Direction.Bottom);
-        result[3] = getNeighborWithDirection(binary, Direction.Left);
-        result[6] = getNeighborWithDirection(result[7], Direction.Left);
-        result[8] = getNeighborWithDirection(result[7], Direction.Right);
+        result[1] = getNeighborWithDirection(binary, Direction.TOP);
+        result[0] = getNeighborWithDirection(result[1], Direction.LEFT);
+        result[2] = getNeighborWithDirection(result[1], Direction.RIGHT);
+        result[5] = getNeighborWithDirection(binary, Direction.RIGHT);
+        result[7] = getNeighborWithDirection(binary, Direction.BOTTOM);
+        result[3] = getNeighborWithDirection(binary, Direction.LEFT);
+        result[6] = getNeighborWithDirection(result[7], Direction.LEFT);
+        result[8] = getNeighborWithDirection(result[7], Direction.RIGHT);
         return result;
     }
 
@@ -414,7 +413,7 @@ public class GeoHash {
      *
      * @param base32 base32编码
      */
-    private static void valideBase32(String base32) throws IllegalArgumentException {
+    private static void validateBase32(String base32) throws IllegalArgumentException {
         if (base32 == null || base32.length() == 0) {
             throw new IllegalArgumentException("base32编码不能为空");
         }
@@ -428,7 +427,7 @@ public class GeoHash {
      *
      * @param binary base32编码
      */
-    private static void valideBinary(String binary) throws IllegalArgumentException {
+    private static void validateBinary(String binary) throws IllegalArgumentException {
         if (binary == null || binary.length() == 0) {
             throw new IllegalArgumentException("二进制编码不能为空");
         }
